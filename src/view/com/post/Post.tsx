@@ -10,6 +10,7 @@ import {useOpenComposer} from '#/lib/hooks/useOpenComposer'
 import {makeProfileLink} from '#/lib/routes/links'
 import {countLines} from '#/lib/strings/helpers'
 import {
+  getShadowedPostRecord,
   POST_TOMBSTONE,
   type Shadow,
   usePostShadow,
@@ -51,12 +52,16 @@ export function Post({
   onBeforePress?: () => void
 }) {
   const moderationOpts = useModerationOpts()
-  const record = useMemo<app.bsky.feed.post.Main | undefined>(
+  const loadedRecord = useMemo<app.bsky.feed.post.Main | undefined>(
     () =>
       bsky.matches(app.bsky.feed.post, post.record) ? post.record : undefined,
     [post],
   )
   const postShadowed = usePostShadow(post)
+  const record =
+    loadedRecord && postShadowed !== POST_TOMBSTONE
+      ? getShadowedPostRecord(postShadowed, loadedRecord)
+      : loadedRecord
   const richText = useMemo(
     () =>
       record

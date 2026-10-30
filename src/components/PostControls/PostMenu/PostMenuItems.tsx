@@ -25,7 +25,7 @@ import {toShareUrl} from '#/lib/strings/url-helpers'
 import {useTranslate} from '#/lib/translation'
 import {getPostLanguageTags} from '#/locale/helpers'
 import {logger} from '#/logger'
-import {type Shadow} from '#/state/cache/post-shadow'
+import {getShadowedPostRecord, type Shadow} from '#/state/cache/post-shadow'
 import {useProfileShadow} from '#/state/cache/profile-shadow'
 import {useFeedFeedbackContext} from '#/state/feed-feedback'
 import {
@@ -72,6 +72,7 @@ import {
   Mute_Stroke2_Corner0_Rounded as Mute,
   Mute_Stroke2_Corner0_Rounded as MuteIcon,
 } from '#/components/icons/Mute'
+import {Pencil_Stroke2_Corner0_Rounded as PencilIcon} from '#/components/icons/Pencil'
 import {PersonX_Stroke2_Corner0_Rounded as PersonX} from '#/components/icons/Person'
 import {Pin_Stroke2_Corner0_Rounded as PinIcon} from '#/components/icons/Pin'
 import {SettingsGear2_Stroke2_Corner0_Rounded as Gear} from '#/components/icons/SettingsGear2'
@@ -92,6 +93,8 @@ import * as Prompt from '#/components/Prompt'
 import * as Toast from '#/components/Toast'
 import {useAnalytics} from '#/analytics'
 import {IS_INTERNAL} from '#/env'
+import {EditPostDialog} from '#/features/editPost/EditPostDialog'
+import {canEditPost} from '#/features/editPost/util'
 import {type app} from '#/lexicons'
 import {PostMenuControlItems} from './PostMenuControlItems'
 
@@ -152,6 +155,7 @@ let PostMenuItems = ({
   const postInteractionSettingsDialogControl = useDialogControl()
   const quotePostDetachConfirmControl = useDialogControl()
   const hideReplyConfirmControl = useDialogControl()
+  const editPostDialogControl = useDialogControl()
   const {mutateAsync: toggleReplyVisibility} =
     useToggleReplyVisibilityMutation()
 
@@ -180,6 +184,16 @@ let PostMenuItems = ({
   })
   const isReplyHiddenByThreadgate = threadgateHiddenReplies.has(postUri)
   const isPinned = post.viewer?.pinned
+  const currentRecord = getShadowedPostRecord(post, record)
+  /*
+   * Checked when the menu renders, which happens as it opens. The mutation
+   * checks the window again on save, since the menu may sit open for a while.
+   */
+  const isEditable = canEditPost({
+    authorDid: postAuthor.did,
+    viewerDid: currentAccount?.did,
+    record: currentRecord,
+  })
 
   const {mutateAsync: toggleQuoteDetachment, isPending: isDetachPending} =
     useToggleQuoteDetachmentMutation()
@@ -525,6 +539,15 @@ let PostMenuItems = ({
         {isAuthor && (
           <>
             <Menu.Group>
+              {isEditable && (
+                <Menu.Item
+                  testID="postDropdownEditPostBtn"
+                  label={l`Edit post`}
+                  onPress={() => editPostDialogControl.open()}>
+                  <Menu.ItemText>{l`Edit post`}</Menu.ItemText>
+                  <Menu.ItemIcon icon={PencilIcon} position="right" />
+                </Menu.Item>
+              )}
               <Menu.Item
                 testID="pinPostBtn"
                 label={
@@ -859,6 +882,17 @@ let PostMenuItems = ({
           })
         }}
       />
+      {/*
+       * Mounted for any own post, not just editable ones, so an open editor
+       * doesn't vanish when the window closes. Saving rechecks the window.
+       */}
+      {isAuthor && (
+        <EditPostDialog
+          control={editPostDialogControl}
+          postUri={postUri}
+          initialText={currentRecord.text}
+        />
+      )}
       <PostInteractionSettingsDialog
         control={postInteractionSettingsDialogControl}
         postUri={post.uri}

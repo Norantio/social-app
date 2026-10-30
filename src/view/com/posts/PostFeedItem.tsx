@@ -13,6 +13,7 @@ import {usePalette} from '#/lib/hooks/usePalette'
 import {makeProfileLink} from '#/lib/routes/links'
 import {countLines} from '#/lib/strings/helpers'
 import {
+  getShadowedPostRecord,
   POST_TOMBSTONE,
   type Shadow,
   usePostShadow,
@@ -104,13 +105,17 @@ export function PostFeedItem({
   onShowLess?: (interaction: app.bsky.feed.defs.Interaction) => void
 }): React.ReactNode {
   const postShadowed = usePostShadow(post)
+  const currentRecord =
+    postShadowed === POST_TOMBSTONE
+      ? record
+      : getShadowedPostRecord(postShadowed, record)
   const richText = useMemo(
     () =>
       new RichTextAPI({
-        text: record.text,
-        facets: record.facets,
+        text: currentRecord.text,
+        facets: currentRecord.facets,
       }),
-    [record],
+    [currentRecord],
   )
   if (postShadowed === POST_TOMBSTONE) {
     return null
@@ -120,7 +125,7 @@ export function PostFeedItem({
       <ReportDialogMetadataContext.Provider key={postShadowed.uri}>
         <FeedItemInner
           post={postShadowed}
-          record={record}
+          record={currentRecord}
           postNumbering={postNumbering}
           reason={reason}
           feedContext={feedContext}

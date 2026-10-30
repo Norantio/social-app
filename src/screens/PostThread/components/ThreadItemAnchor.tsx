@@ -11,6 +11,7 @@ import {sanitizeDisplayName} from '#/lib/strings/display-names'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {niceDate} from '#/lib/strings/time'
 import {
+  getShadowedPostRecord,
   POST_TOMBSTONE,
   type Shadow,
   usePostShadow,
@@ -186,7 +187,7 @@ const ThreadItemAnchorInner = memo(function ThreadItemAnchorInner({
   const formatPostStatCount = useFormatPostStatCount()
 
   const post = postShadow
-  const record = item.value.post.record
+  const record = getShadowedPostRecord(postShadow, item.value.post.record)
   const postNumbering = item.value
   const showPostNumber = useHasThreadItemPostNumber(postNumbering)
   const moderation = item.moderation

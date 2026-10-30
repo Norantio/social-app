@@ -9,6 +9,7 @@ import {useOpenComposer} from '#/lib/hooks/useOpenComposer'
 import {makeProfileLink} from '#/lib/routes/links'
 import {countLines} from '#/lib/strings/helpers'
 import {
+  getShadowedPostRecord,
   POST_TOMBSTONE,
   type Shadow,
   usePostShadow,
@@ -267,7 +268,7 @@ const ThreadItemTreePostInner = memo(function ThreadItemTreePostInner({
   const {currentAccount} = useSession()
 
   const post = item.value.post
-  const record = item.value.post.record
+  const record = getShadowedPostRecord(postShadow, item.value.post.record)
   const postNumbering = item.value
   const showPostNumber = useHasThreadItemPostNumber(postNumbering)
   const moderation = item.moderation

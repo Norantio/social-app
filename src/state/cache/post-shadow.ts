@@ -30,6 +30,17 @@ export interface PostShadow {
   pinned: boolean
   optimisticReplyCount: number | undefined
   bookmarked: boolean | undefined
+  /**
+   * The record written by an edit in this session. Feeds and threads keep
+   * the original until they refetch, so this lets the new text show up
+   * everywhere the post is rendered right away.
+   */
+  editedRecord: app.bsky.feed.post.Main | undefined
+  /**
+   * The CID of the edited record, so likes, reposts and replies made after an
+   * edit point at the current version of the post.
+   */
+  editedCid: app.bsky.feed.defs.PostView['cid'] | undefined
 }
 
 export const POST_TOMBSTONE = Symbol('PostTombstone')
@@ -145,6 +156,8 @@ function mergeShadow(
 
   return castAsShadow({
     ...post,
+    cid: shadow.editedCid ?? post.cid,
+    record: shadow.editedRecord ?? post.record,
     embed: embed || post.embed,
     likeCount: likeCount,
     repostCount: repostCount,
@@ -166,6 +179,18 @@ function mergeShadow(
         'bookmarked' in shadow ? shadow.bookmarked : post.viewer?.bookmarked,
     },
   })
+}
+
+/**
+ * The post record to render for a shadowed post. The shadow carries any edit
+ * the viewer made in this session; `record` is the already-checked record the
+ * post was loaded with, used when the shadowed one isn't a post record.
+ */
+export function getShadowedPostRecord(
+  post: Shadow<app.bsky.feed.defs.PostView>,
+  record: app.bsky.feed.post.Main,
+): app.bsky.feed.post.Main {
+  return bsky.isType(app.bsky.feed.post, post.record) ? post.record : record
 }
 
 export function updatePostShadow(
